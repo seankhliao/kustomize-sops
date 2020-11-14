@@ -112,3 +112,59 @@ brews:
       plugin_path =  "$HOME/.config/kustomize/plugin/viaduct-ai/ksops"
       mkdir_p plugin_path
       system "go", "build", "-o", plugin_path/"ksops"
+
+    test: |
+      (testpath/"kustomization.yaml").write <<~EOS
+        generators:
+        - generate-secrets.yaml
+      EOS
+
+      (testpath/"generate-secrets.yaml").write <<~EOS
+        apiVersion: viaduct.ai/v1
+        kind: ksops
+        metadata:
+          name: ksops-brew-test
+        files:
+          - ./secret.enc.yaml
+      EOS
+      (testpath/"secret.enc.yaml").write <<~EOS
+        apiVersion: v1
+        data:
+            password: ENC[AES256_GCM,data:zNQ8ggdb+JJy7iuPSAN/kQ==,iv:Q5uRK0kc6v+/JQmXTis+nI5+oOGZDYTenBxNHJl1j0k=,tag:vafRVZrmOIDq9BieSt63vQ==,type:str]
+            username: ENC[AES256_GCM,data:Cg2EK7Ses6s=,iv:lfg16oYV8fqat3nyXnymgLe6lYxsqP6ETVAfKu4pw2g=,tag:XXGNUV40E5DkmBBvkFjHSw==,type:str]
+        kind: Secret
+        metadata:
+            name: mysecret
+        stringData:
+            application: ENC[AES256_GCM,data:MaFc0qvfG9NTKzc++TU=,iv:1EwuPqZUhgwruRxDAFILJPsze/TSKHV0b6Eb7/PGzpw=,tag:UBLc3/NzIsLK0bOg/REhfg==,type:str]
+        type: Opaque
+        sops:
+            kms: []
+            gcp_kms: []
+            azure_kv: []
+            hc_vault: []
+            lastmodified: '2020-11-14T18:37:05Z'
+            mac: ENC[AES256_GCM,data:eINwDQqEIqYGgVXx5bdN+AhNsc9KYfoPjDgM3tfwaQv3GPzoSXbWF34RDVPfZhdv3Oq7ZDXB2Bfz5m5trbZYkYhYYsHoBrOtNIN1YLtxFvzS8+1SYEQuqu1mFKM9Mmxs8/A39F4uoG2QA9+zSiig9lvplJ1qTW39p+9WvmFVpSo=,iv:V4gOsx9UDR0LE10DE+0EXAJvmX4Xvgvvm6LXCIRyMaU=,tag:m0q+n9xVNLUwWzP4gnUdvA==,type:str]
+            pgp:
+            -   created_at: '2020-11-14T18:37:04Z'
+                enc: |
+                    -----BEGIN PGP MESSAGE-----
+
+                    hQEMAyUpShfNkFB/AQf+L+gVQqmv7e3P8wsspVmgJczb/2KlXf3s96AD+7YFkJ2v
+                    M36cgn//mVP70EpYi6A8SedftD1h6Z4OBnD51tjua8FZbzFHJ1BvZhZbyowk0m0x
+                    G81tRTiRKAmZ1Np3MHB9Zm4C0jBSL52MyOappb66sh8UTEIR2otCGAsAH+ltZqtX
+                    KUbE2R0GKJn4u8zOWZOB+gOAJkRS7r7ESw9DDNKpgtM3G5872JqZhrxsr5xX+afQ
+                    228gTzOQnqP4ZR9o4MKBF7r+CfgynRXJgGDoc+6g+B/kemd9qNlwZx8DmaoEfCP5
+                    e5VPndaR5kAhQXCr898IKXaY8bj1EL89ackWoGloBtJeAaQe9HFwavGWzvke9wJi
+                    bHhV50oZoAqcXSlhy6AjEW/3bJryzcoMdj68dTVAC4QSRuOJHLZzKQj+nb8t+LUd
+                    UCr3eXZ3rHkCgBT6dAF2IIK+p7euqLlwXhw6NMYvNw==
+                    =f0g+
+                    -----END PGP MESSAGE-----
+                fp: FBC7B9E2A4F9289AC0C1D4843D16CEE4A27381B4
+            encrypted_regex: ^(data|stringData)$
+            version: 3.6.1
+      EOS
+
+      # Assert the plugin loads and throws an error for the missing key
+      output = shell_output("#{bin}/kustomize build --enable_alpha_plugins #{testpath}")
+      assert_match /kind:\s+"?Secret"?/, output
