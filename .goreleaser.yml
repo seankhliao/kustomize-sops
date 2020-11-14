@@ -80,8 +80,6 @@ brews:
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_GITHUB_TOKEN }}"
 
-    download_strategy: GitDownloadStrategy
-
     commit_author:
       name: viaduct-bot
       email: engineering@viaduct.ai
@@ -102,6 +100,11 @@ brews:
 
       echo "Add 'export XDG_CONFIG_HOME=\$HOME/.config' to your .bashrc, zshrc, etc"
 
+
+    custom_block: |
+      license "Apache-2.0"
+      head "https://github.com/viaduct-ai/kustomize-sops.git"
+
     # Packages your package depends on.
     dependencies:
       - name: go
@@ -111,7 +114,7 @@ brews:
     install: |
       plugin_path =  "$HOME/.config/kustomize/plugin/viaduct-ai/ksops"
       mkdir_p plugin_path
-      system "go", "build", "-o", plugin_path/"ksops"
+      system "go", "build", "-o", "#{plugin_path}/ksops"
 
     test: |
       (testpath/"kustomization.yaml").write <<~EOS
