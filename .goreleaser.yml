@@ -21,6 +21,9 @@ archives:
       windows: Windows
       386: i386
       amd64: x86_64
+
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -62,11 +65,50 @@ dockers:
     # This field does not support wildcards, you can add an entire folder here
     # and use wildcards when you `COPY`/`ADD` in your Dockerfile.
     extra_files:
-    - go.mod
-    - go.sum
-    - Makefile
-    - scripts/
-    - exec_plugin.go
-    - ksops.go
-    # include .git for version
-    - .git/
+      - go.mod
+      - go.sum
+      - Makefile
+      - scripts/
+      - exec_plugin.go
+      - ksops.go
+      # include .git for version
+      - .git/
+
+brews:
+  - tap:
+      owner: viaduct-ai
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_GITHUB_TOKEN }}"
+
+    download_strategy: GitDownloadStrategy
+
+    commit_author:
+      name: viaduct-bot
+      email: engineering@viaduct.ai
+
+    # Folder inside the repository to put the formula.
+    # Default is the root folder.
+    folder: Formula
+
+    homepage: "https://github.com/viaduct-ai/kustomize-sops"
+
+    description: "A flexible kustomize plugin for SOPS encrypted resources"
+
+    caveats: |
+      By default, ksops is installed under:
+        $HOME/.config/kustomize/plugin/viaduct.ai/v1
+
+      You will want to verify that $XDG_CONFIG_HOME=$HOME/.config
+
+      echo "Add 'export XDG_CONFIG_HOME=\$HOME/.config' to your .bashrc, zshrc, etc"
+
+    # Packages your package depends on.
+    dependencies:
+      - name: go
+        type: build
+      - name: kustomize
+
+    install: |
+      plugin_path =  "$HOME/.config/kustomize/plugin/viaduct-ai/ksops"
+      mkdir_p plugin_path
+      system "go", "build", "-o", plugin_path/"ksops"
